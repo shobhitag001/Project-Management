@@ -153,19 +153,46 @@ responses use `{ "data": ... }`; validation and runtime errors use
 
 ## Deployment
 
-1. Provision MySQL and set the production `DATABASE_URL`.
-2. Deploy `backend/`, run
-   `npm run prisma:deploy --workspace backend`, and configure
-   `JWT_SECRET`, `CORS_ORIGINS`, and the remaining backend environment values.
-3. Deploy the static output from `npm run build --workspace web`, with
-   `VITE_API_URL` set to the deployed API `/api` URL at build time.
-4. Set the same deployed API URL in `mobile/.env`, then use EAS:
+### Railway: MySQL and API
 
-   ```bash
-   npx eas login
-   npx eas build:configure
-   npx eas build --platform android --profile preview
-   ```
+1. Create a Railway project from this GitHub repository and add a MySQL
+   database service.
+2. Add an API service from the same repository. Keep its root directory at the
+   repository root so `railway.json` can build the npm workspace.
+3. Configure the API variables:
+   - `DATABASE_URL=${{MySQL.MYSQL_URL}}`
+   - `NODE_ENV=production`
+   - `JWT_SECRET` with at least 32 random characters
+   - `JWT_EXPIRES_IN=1h`
+   - `JWT_ISSUER=project-management-api`
+   - `JWT_AUDIENCE=project-management-client`
+   - `CORS_ORIGINS` with the deployed Vercel origin
+   - `LOG_LEVEL=info`
+   - `AUTH_RATE_LIMIT_WINDOW_MS=900000`
+   - `AUTH_RATE_LIMIT_MAX=20`
+4. Generate a public Railway domain for the API. The checked-in deployment
+   configuration builds the backend, runs `prisma migrate deploy`, starts the
+   API, and checks `/health`.
+
+### Vercel: web
+
+1. Import this GitHub repository into Vercel and keep the project root at the
+   repository root.
+2. Set `VITE_API_URL` to the public Railway API URL ending in `/api`.
+3. Deploy. `vercel.json` builds the web workspace, serves `web/dist`, and
+   rewrites client-side routes to `index.html`.
+4. Copy the production Vercel origin to the Railway API's `CORS_ORIGINS`
+   variable and redeploy the API.
+
+### Android distribution
+
+Set the same deployed API URL in `mobile/.env`, then use EAS:
+
+```bash
+npx eas login
+npx eas build:configure
+npx eas build --platform android --profile preview
+```
 
 The resulting EAS URL can be shared as the Android submission. Deployment URLs,
 the public repository URL, APK/EAS link and screen recording are release
