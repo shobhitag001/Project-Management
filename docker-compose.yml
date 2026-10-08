@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: project_management
+      MYSQL_USER: project_user
+      MYSQL_PASSWORD: project_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - projectflow_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u project_user -pproject_password --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  projectflow_mysql:

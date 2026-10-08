@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.expo/
+.env
+.env.local
+coverage/
+*.log
+*.tsbuildinfo
+web/.vite/
+backend/prisma/*.db
+backend/prisma/*.db-journal

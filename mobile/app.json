@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Project Manager",
+    "slug": "project-management-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "projectmanager",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": { "typedRoutes": true },
+    "ios": { "supportsTablet": true },
+    "android": {
+      "package": "com.projectflow.mobile",
+      "adaptiveIcon": { "backgroundColor": "#2563EB" }
+    }
+  }
+}
