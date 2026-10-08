@@ -153,12 +153,20 @@ responses use `{ "data": ... }`; validation and runtime errors use
 
 ## Deployment
 
+Production API: <https://api-production-60dc3.up.railway.app>
+
 ### Railway: MySQL and API
 
 1. Create a Railway project from this GitHub repository and add a MySQL
    database service.
 2. Add an API service from the same repository. Keep its root directory at the
-   repository root so `railway.json` can build the npm workspace.
+   repository root so it can build the npm workspace. Configure these service
+   settings:
+   - Build command:
+     `npm run prisma:generate --workspace backend && npm run build --workspace backend`
+   - Pre-deploy command: `npm run prisma:deploy --workspace backend`
+   - Start command: `npm run start --workspace backend`
+   - Healthcheck path: `/health`
 3. Configure the API variables:
    - `DATABASE_URL=${{MySQL.MYSQL_URL}}`
    - `NODE_ENV=production`
@@ -170,9 +178,7 @@ responses use `{ "data": ... }`; validation and runtime errors use
    - `LOG_LEVEL=info`
    - `AUTH_RATE_LIMIT_WINDOW_MS=900000`
    - `AUTH_RATE_LIMIT_MAX=20`
-4. Generate a public Railway domain for the API. The checked-in deployment
-   configuration builds the backend, runs `prisma migrate deploy`, starts the
-   API, and checks `/health`.
+4. Generate a public Railway domain for the API and deploy the service.
 
 ### Vercel: web
 
