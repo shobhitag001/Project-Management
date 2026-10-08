@@ -11,6 +11,7 @@
     "ios": { "supportsTablet": true },
     "android": {
       "package": "com.projectflow.mobile",
+      "versionCode": 1,
       "adaptiveIcon": { "backgroundColor": "#2563EB" }
     }
   }

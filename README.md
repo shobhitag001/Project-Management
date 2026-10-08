@@ -205,3 +205,9 @@ npx eas build --platform android --profile preview
 The resulting EAS URL can be shared as the Android submission. Deployment URLs,
 the public repository URL, APK/EAS link and screen recording are release
 artifacts and are intentionally not hard-coded in source.
+
+If EAS CLI installation is unavailable, the `Build Android APK` GitHub Actions
+workflow generates the native Android project, builds an installable release
+APK, uploads it as a workflow artifact, and publishes it on the repository's
+public Releases page. It runs automatically when mobile build files change and
+can also be started manually from the Actions tab.

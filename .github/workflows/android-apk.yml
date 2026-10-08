@@ -1,0 +1,82 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/android-apk.yml"
+      - "mobile/**"
+      - "package.json"
+      - "package-lock.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_API_URL: https://api-production-60dc3.up.railway.app/api
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Android project
+        run: npm exec --workspace mobile -- expo prebuild --platform android --no-install
+
+      - name: Build release APK
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Prepare APK
+        id: apk
+        shell: bash
+        run: |
+          TAG="android-v1.0.${GITHUB_RUN_NUMBER}"
+          FILE="ProjectFlow-${TAG}.apk"
+          cp mobile/android/app/build/outputs/apk/release/app-release.apk "${FILE}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "file=${FILE}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProjectFlow-Android-APK
+          path: ${{ steps.apk.outputs.file }}
+          if-no-files-found: error
+
+      - name: Publish public GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ steps.apk.outputs.tag }}"
+          "${{ steps.apk.outputs.file }}#ProjectFlow Android APK"
+          --target "${GITHUB_SHA}"
+          --title "ProjectFlow Android ${{ steps.apk.outputs.tag }}"
+          --notes "Installable Android APK configured for the production ProjectFlow API."
