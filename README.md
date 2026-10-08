@@ -157,6 +157,12 @@ Production API: <https://api-production-60dc3.up.railway.app>
 
 Production web app: <https://project-management-iota-five.vercel.app>
 
+Android APK:
+<https://github.com/shobhitag001/Project-Management/releases/download/android-v1.0.2/ProjectFlow-android-v1.0.2.apk>
+
+Android releases:
+<https://github.com/shobhitag001/Project-Management/releases>
+
 ### Railway: MySQL and API
 
 1. Create a Railway project from this GitHub repository and add a MySQL
