@@ -7,13 +7,41 @@ import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../lib/api";
 import { Button, Input } from "../components/ui";
 
-const formSchema = z.object({
-  fullName: z.string().trim().max(100),
-  email: z.string().email("Enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+const emailSchema = z
+  .string()
+  .email("Enter a valid email address.")
+  .max(254, "Email must be at most 254 characters.");
+const utf8PasswordLimit = (value: string) =>
+  new TextEncoder().encode(value).length <= 72;
+
+const loginFormSchema = z.object({
+  fullName: z.string(),
+  email: emailSchema,
+  password: z
+    .string()
+    .min(1, "Enter your password.")
+    .max(72, "Password must be at most 72 characters.")
+    .refine(utf8PasswordLimit, "Password must be at most 72 UTF-8 bytes."),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+const registrationFormSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(1, "Enter your full name.")
+    .max(100, "Full name must be at most 100 characters."),
+  email: emailSchema,
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters.")
+    .max(72, "Password must be at most 72 characters.")
+    .regex(/[a-z]/, "Password must contain a lowercase letter.")
+    .regex(/[A-Z]/, "Password must contain an uppercase letter.")
+    .regex(/[0-9]/, "Password must contain a number.")
+    .refine(utf8PasswordLimit, "Password must be at most 72 UTF-8 bytes."),
+});
+
+type FormValues = z.infer<typeof loginFormSchema>;
 
 export function AuthPage() {
   const [registering, setRegistering] = useState(false);
@@ -25,16 +53,14 @@ export function AuthPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(
+      registering ? registrationFormSchema : loginFormSchema,
+    ),
     defaultValues: { fullName: "", email: "", password: "" },
   });
 
   async function submit(values: FormValues) {
     setError("");
-    if (registering && values.fullName.length < 2) {
-      setError("Enter your full name.");
-      return;
-    }
     try {
       if (registering) {
         await register(values.fullName, values.email, values.password);

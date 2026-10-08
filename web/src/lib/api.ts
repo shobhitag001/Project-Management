@@ -9,7 +9,14 @@ import type {
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/api";
 
-type ApiErrorShape = { error?: { message?: string }; message?: string };
+type ApiErrorShape = {
+  error?: {
+    code?: string;
+    message?: string;
+    details?: unknown;
+  };
+  message?: string;
+};
 
 interface Pagination {
   page: number;
@@ -26,9 +33,60 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly code?: string,
+    public readonly details?: unknown,
   ) {
     super(message);
+    this.name = "ApiError";
   }
+}
+
+type ValidationDetails = {
+  formErrors?: unknown;
+  fieldErrors?: unknown;
+};
+
+const asMessages = (value: unknown) =>
+  Array.isArray(value)
+    ? value.filter((message): message is string => typeof message === "string")
+    : [];
+
+const fieldLabel = (field: string) => {
+  const spaced = field.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+};
+
+export function formatApiErrorMessage(
+  error: ApiErrorShape["error"],
+  fallback: string,
+) {
+  const details =
+    error?.details && typeof error.details === "object"
+      ? (error.details as ValidationDetails)
+      : undefined;
+  const messages = asMessages(details?.formErrors);
+
+  if (
+    details?.fieldErrors &&
+    typeof details.fieldErrors === "object" &&
+    !Array.isArray(details.fieldErrors)
+  ) {
+    for (const [field, fieldMessages] of Object.entries(details.fieldErrors)) {
+      const label = fieldLabel(field);
+      for (const message of asMessages(fieldMessages)) {
+        messages.push(
+          message.toLocaleLowerCase().startsWith(label.toLocaleLowerCase())
+            ? message
+            : `${label}: ${message}`,
+        );
+      }
+    }
+  }
+
+  const uniqueMessages = [...new Set(messages)];
+  return uniqueMessages.length > 0
+    ? uniqueMessages.join(" ")
+    : error?.message ?? fallback;
 }
 
 async function requestEnvelope<T>(
@@ -63,8 +121,13 @@ async function requestEnvelope<T>(
       window.dispatchEvent(new CustomEvent("auth-expired"));
     }
     throw new ApiError(
-      body.error?.message ?? body.message ?? "Something went wrong.",
+      formatApiErrorMessage(
+        body.error,
+        body.message ?? "Something went wrong.",
+      ),
       response.status,
+      body.error?.code,
+      body.error?.details,
     );
   }
 
